@@ -10,39 +10,121 @@ const ConfirmationModal = ({ onCancel, onConfirm }) => (
   </>
 );
 
-const pet = jest.fn();
-
-const Component = () => {
+const BasicExample = () => {
   const { confirm, confirmProps } = useConfirmation();
 
-  const handleClick = useAsyncCallback(async () => {
-    const didConfirm = await confirm();
+  const confirmAndRemove = useAsyncCallback(async () => {
+    const result = await confirm();
+    if (result) {
+      remove()
+    }
+  }, [confirm]);
+
+  return <>
+     <button onClick={() => confirmAndRemove()}>Remove item</button>
+     <ConfirmationModal {...confirmProps} />
+  </>
+}
+
+
+
+
+const PromiseDriven = () => {
+  const { confirm: selectAlpaca, confirmProps: selectAlpacaProps } = useConfirmation();
+  const { confirm: selectFeed, confirmProps: selectFeedProps } = useConfirmation();
+
+  const findAndFeedAlpaca = useAsyncCallback(async () => {
+    const selectedAlpaca = await selectAlpaca({ options: ['Xavier', 'Indigo'] });
+    if (!selectedAlpaca) {
+      return
+    }
+    const selectedFeed = await selectFeed({ options: ['hay', 'grain' ]});
+    if (!selectedFeed) {
+      snackbar.alert(`${selectedAlpaca} remains hungry`)
+      return
+    }
     if (didConfirm) {
-      pet();
+      feed(animal, food);
     }
   }, [confirm]);
 
   return (
     <>
-      <ConfirmationModal {...confirmProps} />
-      <button onClick={handleClick}>Pet platypus</button>
+      <SelectModal {...selectAlpacaProps} />
+      <SelectModal {...selectFeedProps} />
+      <button onClick={findAndFeedAlpaca}>Feed an alpaca</button>
     </>
   );
 };
 
-const Component2 = () => {
-  const { confirm, confirmResult, confirmProps } = useConfirmation();
+const EffectDriven = () => {
+  const { confirm: selectAlpaca, result: selectedAlpaca, confirmProps: selectAlpacaProps } = useConfirmation();
+  const { confirm: selectFeed, result: selectedFeed, confirmProps: selectFeedProps } = useConfirmation();
+
+  const handleFeedAlpacaClick = useCallback(() => {
+    selectAlpaca({ options: ['Xavier', 'Indigo'] });
+  }, [selectAlpaca]);
 
   useEffect(() => {
-    if (confirmResult) {
-      pet();
+    if (selectedAlpaca) {
+      selectFeed({ options: ['hay', 'grain' ]});
     }
-  }, [confirmResult]);
+  }, [selectedAlpaca])
+
+  useEffect(() => {
+    if (selectedFeed) {
+      feed(selectedAlpaca, food);
+    }
+  }, [selectedAlpaca, selectedAlpaca])
+
+  // - needs state reset
+  const resetState = useCallback(() => {
+    setSelectedAlpaca(undefined)
+    setSelectedFeed(undefined)
+  }, [])
+
+  const onCancelSelectFeed = useCallback(() => {
+    snackbar.alert(`${selectedAlpaca} remains hungry`)
+    resetState()
+  }, [])
 
   return (
     <>
-      <ConfirmationModal {...confirmProps} />
-      <button onClick={confirm}>Pet platypus</button>
+    <SelectModal {...selectAlpacaProps} onCancel={onCancelSelectFeed} />
+    <SelectModal {...selectFeedProps} onCancel={resetState} />
+    <button onClick={handleFeedAlpacaClick}>Feed an alpaca</button>
+    </>
+  );
+};
+
+const CallbackDriven = () => {
+  const { confirm: selectAlpaca, result: selectedAlpaca, confirmProps: selectAlpacaProps } = useConfirmation();
+  const { confirm: selectFeed, result: selectedFeed, confirmProps: selectFeedProps } = useConfirmation();
+
+  const handleFeedAlpacaClick = useCallback(async () => {
+    selectAlpaca({ options: ['Xavier', 'Indigo'] });
+  }, [selectAlpaca]);
+
+  // - not restorable from props
+  const handleConfirmAlpaca = useCallback(() => {
+    if (selectedAlpaca) {
+      selectFeed({ options: ['hay', 'grain' ]});
+    }
+  }, [selectedAlpaca])
+
+  const handleConfirmFeed = useCallback(() => {
+    if (selectedFeed) {
+      feed(selectedAlpaca, food);
+    } else {
+      snackbar.alert(`${selectedAlpaca} remains hungry`)
+    }
+  }, [])
+
+  return (
+    <>
+    <SelectModal {...selectAlpacaProps}  onConfirm={handleConfirmAlpaca} />
+    <SelectModal {...selectFeedProps} onConfirm={handleConfirmFeed} />
+    <button onClick={handleFeedAlpacaClick}>Feed an alpaca</button>
     </>
   );
 };

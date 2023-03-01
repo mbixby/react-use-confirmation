@@ -7,7 +7,7 @@ export const useAsyncCallback = <T extends (...args: never[]) => unknown>(
   const setError = useState()[1];
   return useCallback(() => {
     try {
-      callback();
+      return callback();
     } catch (error) {
       setError(() => {
         throw error;
